@@ -47,30 +47,22 @@ import qrcode
 import quopri  # Correct import
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
-import sys
-import os
-from art import text2art
-
-def resource_path(relative_path):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath('.'), relative_path)
 
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Load configuration with UTF-8 encoding
-config_path = resource_path('config.json')
+config_path = os.path.join(script_dir, 'config.json')
 with open(config_path, 'r', encoding='utf-8') as config_file:
     config = json.load(config_file)
 
 # Use single or multiple SMTP servers based on configuration
 use_single_smtp = config.get('use_single_smtp', False)
-smtp_details = config.get('single_smtp', '').strip('"') if use_single_smtp else None
-single_smtp_sender_email = config.get('single_smtp_sender_email', None) if use_single_smtp else None
+smtp_details = config['single_smtp'].strip('"') if use_single_smtp else None
+single_smtp_sender_email = config['single_smtp_sender_email'] if use_single_smtp else None
 
 # Load email template
-format_file = resource_path(config['html_template_path'])
+format_file = os.path.join(script_dir, config['html_template_path'])
 if not os.path.exists(format_file):
     print(f"\033[91m[ERROR] HTML template file not found: {format_file}\033[0m")
     sys.exit(1)
@@ -79,7 +71,7 @@ with open(format_file, 'r', encoding='utf-8') as template_file:
     email_body = template_file.read()
 
 # Load recipient list
-list_path = resource_path('list.txt')
+list_path = os.path.join(script_dir, 'list.txt')
 with open(list_path, 'r') as list_file:
     email_list = list_file.readlines()
 
@@ -158,7 +150,7 @@ def send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, excha
         m.sender = Mailbox(email_address=exchange_email, name=sender_name)
 
         # Handle multiple inline images using relative paths
-        format_dir = resource_path('format')
+        format_dir = os.path.join(script_dir, 'format')
         image_paths = {
             'a1': os.path.join(format_dir, 'a1.png'),
             'a2': os.path.join(format_dir, 'a2.png'),
@@ -496,21 +488,21 @@ def html_to_pdf(html_content, recipient_email, random_values, image_paths=None):
 
 # Example usage:
 # image_paths = {
-#     'jack': r"C:\Users\Administrator\Downloads\MrGhost-Mailer\format\jack.png"
+#     'jack': r"C:\Users\Administrator\MrGhost-Mailer\format\jack.png"
 # }
 # pdf_content = html_to_pdf(html_content, recipient_email, random_values, image_paths)
 
 
 # Example usage:
 # image_paths = {
-#     'jack': r"C:\Users\Administrator\Downloads\MrGhost-Mailer\format\jack.png"
+#     'jack': r"C:\Users\Administrator\MrGhost-Mailer\format\jack.png"
 # }
 # pdf_content = html_to_pdf(html_content, recipient_email, random_values, image_paths)
 
 
 # Example usage:
 # image_paths = {
-#     'jack': r"C:\Users\Administrator\Downloads\MrGhost-Mailer\format\jack.png"
+#     'jack': r"C:\Users\Administrator\MrGhost-Mailer\format\jack.png"
 # }
 # pdf_content = html_to_pdf(html_content, recipient_email, random_values, image_paths)
 
@@ -688,9 +680,7 @@ def send_emails_concurrently(email_list, body):
     # Display attachment information once at the beginning
     if config.get('send_attachment', False):
         attachment_path = config.get('attachment_path', '')
-        if attachment_path:
-            full_attachment_path = resource_path(attachment_path)
-        if os.path.exists(full_attachment_path):
+        if attachment_path and os.path.exists(attachment_path):
             print(f"\033[94m[INFO] Attachment will be added: {attachment_path}\033[0m")
         else:
             print(f"\033[91m[WARNING] Attachment file not found: {attachment_path}\033[0m")
