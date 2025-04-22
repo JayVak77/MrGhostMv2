@@ -47,33 +47,110 @@ import qrcode
 import quopri  # Correct import
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+import sys
+import os
+from art import text2art
 
 # Get the directory of the current script
-script_dir = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    # Running as a bundled executable
+    script_dir = os.path.dirname(sys.executable)
+else:
+    # Running as a script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Load configuration with UTF-8 encoding
+# Determine script directory
+if getattr(sys, 'frozen', False):
+    script_dir = os.path.dirname(sys.executable)
+else:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Define your resource paths *after* you've set script_dir
 config_path = os.path.join(script_dir, 'config.json')
-with open(config_path, 'r', encoding='utf-8') as config_file:
-    config = json.load(config_file)
+
+# Now, open the config file
+with open(config_path, 'r', encoding='utf-8') as f:
+    config = json.load(f)
 
 # Use single or multiple SMTP servers based on configuration
 use_single_smtp = config.get('use_single_smtp', False)
-smtp_details = config['single_smtp'].strip('"') if use_single_smtp else None
-single_smtp_sender_email = config['single_smtp_sender_email'] if use_single_smtp else None
+smtp_details = config.get('single_smtp', '').strip('"') if use_single_smtp else None
+single_smtp_sender_email = config.get('single_smtp_sender_email', None) if use_single_smtp else None
 
 # Load email template
+# Step 1: Determine folder path
+if getattr(sys, 'frozen', False):
+    # Running as a bundled executable
+    script_dir = os.path.dirname(sys.executable)
+else:
+    # Running as a script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Step 2: Load config.json from the same folder
+config_path = os.path.join(script_dir, 'config.json')
+with open(config_path, 'r', encoding='utf-8') as f:
+    config = json.load(f)
+
+# Step 3: Load the email template file
 format_file = os.path.join(script_dir, config['html_template_path'])
+
 if not os.path.exists(format_file):
     print(f"\033[91m[ERROR] HTML template file not found: {format_file}\033[0m")
     sys.exit(1)
 
-with open(format_file, 'r', encoding='utf-8') as template_file:
-    email_body = template_file.read()
+with open(format_file, 'r', encoding='utf-8') as html_file:
+    email_body = html_file.read()
+
+# Step 4: Define the replace_placeholders() function
+def replace_placeholders(content, to_email, random_values):
+    # Example replacements; add your actual placeholder logic
+    content = content.replace("{to_email}", to_email)
+    for key, value in random_values.items():
+        placeholder = "{" + key + "}"
+        content = content.replace(placeholder, str(value))
+    return content
+
+# Step 5: Example variables (replace with your actual variables)
+to_email = "example@domain.com"
+random_values = {"name": "John", "date": "2025-04-22"}
+
+# Step 6: Use email_body after loading
+email_content = replace_placeholders(email_body, to_email, random_values)
+
+# Now, `email_content` contains your email with placeholders replaced
+# You can proceed to send the email using your email sending logic
 
 # Load recipient list
+if getattr(sys, 'frozen', False):
+    script_dir = os.path.dirname(sys.executable)
+else:
+    # Running as a script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Step 2: Define resource paths
+config_path = os.path.join(script_dir, 'config.json')
 list_path = os.path.join(script_dir, 'list.txt')
-with open(list_path, 'r') as list_file:
-    email_list = list_file.readlines()
+
+# Step 3: Load config.json
+try:
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+except Exception as e:
+    print(f"\033[91m[ERROR] Failed to load {config_path}: {e}\033[0m")
+    sys.exit(1)
+
+# Step 4: Load list.txt
+try:
+    with open(list_path, 'r', encoding='utf-8') as list_file:
+        email_list = list_file.readlines()
+except Exception as e:
+    print(f"\033[91m[ERROR] Failed to load {list_path}: {e}\033[0m")
+    sys.exit(1)
+
+# Now, all your code can use 'config' and 'email_list' variables
+# Example placeholder: print number of emails loaded
+print(f"Loaded {len(email_list)} emails from {list_path}")
 
 # Signal handler for graceful shutdown
 should_stop = False
@@ -565,11 +642,11 @@ def send_email(to_email, body, count):
     random_values = generate_random_values()
 
     # Load and prepare email content
-    format_type = config.get('format_type', 'F2')
+    format_type =   config.get('format_type', 'F2')
     format_file = os.path.join(script_dir, config['html_template_path'])
     if not os.path.exists(format_file):
         print(f"\033[91m[ERROR] Format file not found: {format_file}\033[0m")
-        return False
+        sys.exit(1)
 
     with open(format_file, 'r', encoding='utf-8') as html_file:
         html_content = html_file.read()
