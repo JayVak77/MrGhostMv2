@@ -817,7 +817,7 @@ def send_email_via_multiple_smtp(to_email, msg):
     return False
 
 # Example: sending email for one recipient
-def send_email_for_recipient(to_email, email_body, subject):
+def send_email_for_recipient(to_email, email_body, subject, sender_email, sender_name):
     msg = MIMEText(email_body, 'html')  # or 'plain'
     msg['Subject'] = subject
     msg['From'] = sender_email  # ensure sender_email is set
@@ -1002,17 +1002,23 @@ def wait_for_user_exit():
     except KeyboardInterrupt:
         print("\nApplication closed. Goodbye!")
 
-def send_emails_concurrently(email_list, email_content, subject):
+def send_emails_concurrently(email_list, email_content, subject, sender_email, sender_name):
     success_count = 0
     fail_count = 0
     for recipient in email_list:
         to_email = recipient.strip()
-        result = send_email_for_recipient(to_email, email_content, subject)
+        result = send_email_for_recipient(email_list, email_content, subject, sender_email, sender_name)
         if result:
             success_count += 1
         else:
             fail_count += 1
     print(f"Sent {success_count} emails successfully, {fail_count} failed.")
+
+# Before calling the function
+sender_email = config['sender_email']
+sender_name = config['sender_name']
+subject = random.choice(config['subjects'])
+send_emails_concurrently(email_list, email_content, subject, sender_email, sender_name)
 
 def main():
     pc_identifier = get_pc_identifier()
@@ -1079,7 +1085,7 @@ def main():
         else:
             # Proceed with sending all emails
             try:
-                successful_sends, failed_sends = send_emails_concurrently(email_list, email_content, subject)
+                successful_sends, failed_sends = send_emails_concurrently(email_list, email_content, subject, sender_email, sender_name)
             except Exception as e:
                 print(f"\033[91m[ERROR] Failed to send emails: {str(e)}\033[0m")
                 successful_sends = 0
