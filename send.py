@@ -146,20 +146,6 @@ else:
 config_path = os.path.join(script_dir, 'config.json')
 with open(config_path, 'r', encoding='utf-8') as f:
     config = json.load(f)
-    smtp_config = config['smtp']
-    email_config = config['email']
-    list_path = config['list']
-    sleep_time = config['sleep_time']
-
-try:
-    server = smtplib.SMTP(smtp_config['host'], smtp_config['port'])
-    if smtp_config.get('use_tls', False):
-        server.starttls()
-    server.login(smtp_config['username'], smtp_config['password'])
-    print("SMTP connection established successfully.")
-except Exception as e:
-    print(f"[ERROR] Failed to connect SMTP: {e}")
-    exit(1)
 
 # Step 3: Load the email template file
 format_file = os.path.join(script_dir, config['html_template_path'])
@@ -767,78 +753,66 @@ def send_email(to_email, body, count):
                     print(f"\033[91m[ERROR] Failed to convert HTML to DOCX\033[0m")
                     return False
 
-    # Determine which sending method to use
-def send_email(to_email, msg, sender_name):
-    # Decide which method to use based on config
-    if config.get('use_exchangelib', False):
-        try:
-            exchange_parts = config['exchange_server'].split('|')
-            if len(exchange_parts) != 3:
-                raise ValueError("Invalid Exchange server configuration")
-            exchange_server, exchange_email, exchange_password = exchange_parts
-            return send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, exchange_server, exchange_password)
-        except Exception as e:
-            print(f"\033[91m[ERROR] Failed to send email via Exchange: {str(e)}\033[0m")
+# Determine which sending method to use
+        if config.get('use_exchangelib', False):
+            try:
+                exchange_data = config.get('exchange_server', '')
+                exchange_parts = exchange_data.split('|')
+                if len(exchange_parts) != 3:
+                    raise ValueError("Invalid Exchange server configuration")
+                exchange_server, exchange_email, exchange_password = exchange_parts
+                return send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, exchange_server, exchange_password)
+            except Exception as e:
+                print(f"\033[91m[ERROR] Failed to send email via Exchange: {e}\033[0m")
+                return False
+
+        elif config.get('use_single_smtp', False):
+            try:
+                smtp_data = config.get('single_smtp', '')
+                smtp_parts = smtp_data.split('|')
+                if len(smtp_parts) != 4:
+                    raise ValueError("Invalid single SMTP configuration")
+                smtp_host, smtp_port, smtp_user, smtp_pass = smtp_parts[0], int(smtp_parts[1]), smtp_parts[2], smtp_parts[3]
+                return send_email_via_smtp(to_email, msg, smtp_host, smtp_port, smtp_user, smtp_pass)
+            except Exception as e:
+                print(f"\033[91m[ERROR] Failed to send email via single SMTP: {e}\033[0m")
+                return False
+
+        else:
+            print("\033[91m[ERROR] No valid email sending configuration found.\033[0m")
             return False
 
-    elif config.get('use_single_smtp', False):
-        try:
-            # Expecting 'single_smtp' to be like "host:port"
-            smtp_info = config['single_smtp']
-            if ':' not in smtp_info:
-                raise ValueError("Invalid single SMTP configuration")
-            smtp_host, smtp_port_str = smtp_info.split(':')
-            smtp_port = int(smtp_port_str)
-            # You should store smtp user/pass if needed
-            smtp_user = config.get('single_smtp_user', '')  # optional
-            smtp_pass = config.get('single_smtp_pass', '')  # optional
-            return send_email_via_smtp(to_email, msg, smtp_host, smtp_port, smtp_user, smtp_pass)
-        except Exception as e:
-            print(f"\033[91m[ERROR] Failed to send email via single SMTP: {str(e)}\033[0m")
-            return False
 
-    else:
-        print("\033[91m[ERROR] No valid email sending configuration found.\033[0m")
-        return False
-
-# SMTP send function
 def send_email_via_smtp(to_email, msg, smtp_host, smtp_port, smtp_user, smtp_pass):
     try:
         with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
-            if config.get('use_tls', True):
+            if config['use_tls']:
                 server.starttls()
-            if smtp_user and smtp_pass:
-                server.login(smtp_user, smtp_pass)
-            server.sendmail(smtp_user or msg['From'], to_email, msg.as_string())
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, to_email, msg.as_string())
         return True
     except Exception as e:
         print(f"\033[91m[ERROR] Failed to send email via SMTP: {str(e)}\033[0m")
         return False
 
-# For multiple SMTP servers
 def send_email_via_multiple_smtp(to_email, msg):
-    # 'servers' must be defined elsewhere as list of dicts
     for server in servers:
         try:
             with smtplib.SMTP(server['host'], server['port'], timeout=30) as smtp_server:
-                if config.get('use_tls', True):
+                if config['use_tls']:
                     smtp_server.starttls()
                 smtp_server.login(server['username'], server['password'])
                 smtp_server.sendmail(server['username'], to_email, msg.as_string())
             return True
         except Exception as e:
-            print(f"\033[91m[ERROR] Failed to send via {server['host']}: {e}\033[0m")
+            print(f"\033[91m[ERROR] Failed to send email via SMTP server {server['host']}: {e}\033[0m")
     return False
 
-# Example: sending email for one recipient
-def send_email_for_recipient(to_email, email_body, subject, sender_email, sender_name):
-    msg = MIMEText(email_body, 'html')  # or 'plain'
-    msg['Subject'] = subject
-    msg['From'] = sender_email  # ensure sender_email is set
-    msg['To'] = to_email
-
-    # Call the main send function
-    return send_email(to_email, msg, sender_name)
+def send_emails_concurrently(email_list, body):
+    successful_sends = 0
+    failed_sends = 0
+    pause_count = 0
+    total_emails = len(email_list)
 
     # Display attachment information once at the beginning
     if config.get('send_attachment', False):
@@ -1016,24 +990,6 @@ def wait_for_user_exit():
     except KeyboardInterrupt:
         print("\nApplication closed. Goodbye!")
 
-def send_emails_concurrently(email_list, email_content, subject, sender_email, sender_name):
-    success_count = 0
-    fail_count = 0
-    for recipient in email_list:
-        to_email = recipient.strip()
-        result = send_email_for_recipient(email_list, email_content, subject, sender_email, sender_name)
-        if result:
-            success_count += 1
-        else:
-            fail_count += 1
-    print(f"Sent {success_count} emails successfully, {fail_count} failed.")
-
-# Before calling the function
-sender_email = config['sender_email']
-sender_name = config['sender_name']
-subject = random.choice(config['subjects'])
-send_emails_concurrently(email_list, email_content, subject, sender_email, sender_name)
-
 def main():
     pc_identifier = get_pc_identifier()
     license_key = load_license()
@@ -1099,7 +1055,7 @@ def main():
         else:
             # Proceed with sending all emails
             try:
-                successful_sends, failed_sends = send_emails_concurrently(email_list, email_content, subject, sender_email, sender_name)
+                successful_sends, failed_sends = send_emails_concurrently(email_list, email_body)
             except Exception as e:
                 print(f"\033[91m[ERROR] Failed to send emails: {str(e)}\033[0m")
                 successful_sends = 0
