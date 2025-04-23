@@ -146,6 +146,20 @@ else:
 config_path = os.path.join(script_dir, 'config.json')
 with open(config_path, 'r', encoding='utf-8') as f:
     config = json.load(f)
+    smtp_config = config['smtp']
+    email_config = config['email']
+    list_path = config['list']
+    sleep_time = config['sleep_time']
+
+try:
+    server = smtplib.SMTP(smtp_config['host'], smtp_config['port'])
+    if smtp_config.get('use_tls', False):
+        server.starttls()
+    server.login(smtp_config['username'], smtp_config['password'])
+    print("SMTP connection established successfully.")
+except Exception as e:
+    print(f"[ERROR] Failed to connect SMTP: {e}")
+    exit(1)
 
 # Step 3: Load the email template file
 format_file = os.path.join(script_dir, config['html_template_path'])
