@@ -4,7 +4,7 @@
   "exchange_server": "west.exch081.serverdata.net|MFish@thegrandhealthcare.com|Winter@2020#",
   "use_single_smtp": false,
   "smtp_server": "host|username|password|port|use_tls",
-  "smtp_servers": ["host|username|password|port|use_tls", ]
+  "smtp_servers": ["host|username|password|port|use_tls"]
 }
 
 "single_smtp_sender_email": "anna.lakatos@lagence.com",
