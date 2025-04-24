@@ -82,27 +82,6 @@ msg.set_content(body)
 # Decide whether to use Exchange or SMTP
 if config.get("use_exchangelib", False):
     # Parse exchange server info
-    exchange_str = config.get("exchange_server")
-    server_url, email, password = exchange_str.split('|')
-    creds = Credentials(username=email, password=password)
-    account = Account(
-        primary_smtp_address=email,
-        credentials=creds,
-        autodiscover=False,
-        access_type=DELEGATE,
-        config=Configuration(server=server_url)
-    )
-    email_client = ('exchangelib', account)
-    
-    client_type, client_info = email_client
-
-if client_type == 'exchangelib':
-    # Send via Exchange
-    account = client_info
-    try:
-        email_msg = Message(
-            account=account,
-            subject=subject,
             body=body,
             to_recipients=[to_email]
         )
@@ -125,12 +104,6 @@ elif client_type == 'smtplib':
     except Exception as e:
         print(f"Failed to send via SMTP: {e}")
 
-else:
-    # SMTP setup
-    if config.get("use_single_smtp", False):
-        # Parse single SMTP string
-        smtp_str = config.get("smtp_server")
-        host, username, password, port, use_tls_str = smtp_str.split('|')
         port = int(port)
         use_tls = use_tls_str.lower() == 'true'
         smtp_config = {
