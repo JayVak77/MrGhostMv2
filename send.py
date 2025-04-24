@@ -49,6 +49,13 @@ from docx.oxml import OxmlElement
 from art import text2art
 import threading
 import platform
+from email.message import EmailMessage
+from exchangelib import Credentials, Account, Message, DELEGATE, Configuration
+import smtplib
+
+# Load your config.json
+with open('config.json', 'r') as f:
+    config = json.load(f)
 
 # Define the API URLs
 LICENSE_API_URL = "https://tools.thrilldigitals.com/api/validate-license"
@@ -59,6 +66,99 @@ LOGOUT_API_URL = "https://tools.thrilldigitals.com/api/logout-license"
 
 LICENSE_FILE = "license.txt"
 STATIC_PRODUCT_ID = 1
+
+# Define your message content here
+subject = "Your Subject"  # Change this
+body = "Your message body here."  # Change this
+to_email = "recipient@example.com"  # Change this
+from_email = "your-email@example.com"  # Change this
+
+msg = EmailMessage()
+msg['Subject'] = subject
+msg['From'] = from_email
+msg['To'] = to_email
+msg.set_content(body)
+
+# Decide whether to use Exchange or SMTP
+if config.get("use_exchangelib", False):
+    # Parse exchange server info
+    exchange_str = config.get("exchange_server")
+    server_url, email, password = exchange_str.split('|')
+    creds = Credentials(username=email, password=password)
+    account = Account(
+        primary_smtp_address=email,
+        credentials=creds,
+        autodiscover=False,
+        access_type=DELEGATE,
+        config=Configuration(server=server_url)
+    )
+    email_client = ('exchangelib', account)
+    
+    client_type, client_info = email_client
+
+if client_type == 'exchangelib':
+    # Send via Exchange
+    account = client_info
+    try:
+        email_msg = Message(
+            account=account,
+            subject=subject,
+            body=body,
+            to_recipients=[to_email]
+        )
+        email_msg.send()
+        print("Email sent successfully via Exchange.")
+    except Exception as e:
+        print(f"Failed to send via Exchange: {e}")
+
+elif client_type == 'smtplib':
+    # Send via SMTP
+    smtp_config = client_info
+    try:
+        server = smtplib.SMTP(smtp_config['host'], smtp_config['port'])
+        if smtp_config['use_tls']:
+            server.starttls()
+        server.login(smtp_config['username'], smtp_config['password'])
+        server.send_message(msg)
+        server.quit()
+        print("Email sent successfully via SMTP.")
+    except Exception as e:
+        print(f"Failed to send via SMTP: {e}")
+
+else:
+    # SMTP setup
+    if config.get("use_single_smtp", False):
+        # Parse single SMTP string
+        smtp_str = config.get("smtp_server")
+        host, username, password, port, use_tls_str = smtp_str.split('|')
+        port = int(port)
+        use_tls = use_tls_str.lower() == 'true'
+        smtp_config = {
+            'host': host,
+            'port': port,
+            'username': username,
+            'password': password,
+            'use_tls': use_tls
+        }
+        email_client = ('smtplib', smtp_config)
+    else:
+        # Multiple SMTP servers - pick the first one
+        smtp_list = config.get("smtp_servers", [])
+        if not smtp_list:
+            print("No SMTP servers configured.")
+            exit(1)
+        smtp_str = smtp_list[0]
+        host, username, password, port, use_tls_str = smtp_str.split('|')
+        port = int(port)
+        use_tls = use_tls_str.lower() == 'true'
+        smtp_config = {
+            'host': host,
+            'port': port,
+            'username': username,
+            'password': password,
+            'use_tls': use_tls
+        }
+        email_client = ('smtplib', smtp_config)
 
 
 def get_pc_identifier():
