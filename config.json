@@ -1,7 +1,13 @@
 {
-      "use_single_smtp": false,
-  "single_smtp": "",
-  "single_smtp_sender_email": "anna.lakatos@lagence.com",
+  {
+  "use_exchangelib": true/false,
+  "exchange_server": "server|email|password",
+  "use_single_smtp": true/false,
+  "smtp_server": "host|username|password|port|use_tls",
+  "smtp_servers": ["host|username|password|port|use_tls", ...]
+}
+
+"single_smtp_sender_email": "anna.lakatos@lagence.com",
   "use_tls": true,
   "smtp_sleep_time": 7,
   "smtp_pause_num": 8,
