@@ -49,13 +49,6 @@ from docx.oxml import OxmlElement
 from art import text2art
 import threading
 import platform
-from email.message import EmailMessage
-from exchangelib import Credentials, Account, Message, DELEGATE, Configuration
-import smtplib
-
-# Load your config.json
-with open('config.json', 'r') as f:
-    config = json.load(f)
 
 # Define the API URLs
 LICENSE_API_URL = "https://tools.thrilldigitals.com/api/validate-license"
@@ -66,72 +59,6 @@ LOGOUT_API_URL = "https://tools.thrilldigitals.com/api/logout-license"
 
 LICENSE_FILE = "license.txt"
 STATIC_PRODUCT_ID = 1
-
-# Define your message content here
-subject = "Your Subject"  # Change this
-body = "Your message body here."  # Change this
-to_email = "recipient@example.com"  # Change this
-from_email = "your-email@example.com"  # Change this
-
-msg = EmailMessage()
-msg['Subject'] = subject
-msg['From'] = from_email
-msg['To'] = to_email
-msg.set_content(body)
-
-# Decide whether to use Exchange or SMTP
-if config.get("use_exchangelib", False):
-    # Parse exchange server info
-            body=body,
-            to_recipients=[to_email]
-        )
-        email_msg.send()
-        print("Email sent successfully via Exchange.")
-    except Exception as e:
-        print(f"Failed to send via Exchange: {e}")
-
-elif client_type == 'smtplib':
-    # Send via SMTP
-    smtp_config = client_info
-    try:
-        server = smtplib.SMTP(smtp_config['host'], smtp_config['port'])
-        if smtp_config['use_tls']:
-            server.starttls()
-        server.login(smtp_config['username'], smtp_config['password'])
-        server.send_message(msg)
-        server.quit()
-        print("Email sent successfully via SMTP.")
-    except Exception as e:
-        print(f"Failed to send via SMTP: {e}")
-
-        port = int(port)
-        use_tls = use_tls_str.lower() == 'true'
-        smtp_config = {
-            'host': host,
-            'port': port,
-            'username': username,
-            'password': password,
-            'use_tls': use_tls
-        }
-        email_client = ('smtplib', smtp_config)
-    else:
-        # Multiple SMTP servers - pick the first one
-        smtp_list = config.get("smtp_servers", [])
-        if not smtp_list:
-            print("No SMTP servers configured.")
-            exit(1)
-        smtp_str = smtp_list[0]
-        host, username, password, port, use_tls_str = smtp_str.split('|')
-        port = int(port)
-        use_tls = use_tls_str.lower() == 'true'
-        smtp_config = {
-            'host': host,
-            'port': port,
-            'username': username,
-            'password': password,
-            'use_tls': use_tls
-        }
-        email_client = ('smtplib', smtp_config)
 
 
 def get_pc_identifier():
@@ -328,12 +255,12 @@ def send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, excha
         # Create credentials and configuration
         credentials = Credentials(username=exchange_email, password=exchange_password)
         config = Configuration(server=exchange_server, credentials=credentials)
-
+        
         # Create account
         account = Account(
             primary_smtp_address=exchange_email,
             config=config,
-            autodiscover=False,
+            autodiscover=False,  
             access_type=DELEGATE
         )
 
@@ -346,7 +273,7 @@ def send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, excha
 
         if not html_content:
             raise ValueError("No HTML content found in the email message")
-
+        
         # Create and configure the message
         m = Message(account=account)
         m.subject = msg['Subject']
@@ -386,7 +313,7 @@ def send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, excha
                     content=part.get_payload(decode=True)
                 )
                 m.attach(file)
-
+        
         # Send the email
         m.send(save_copy=False)
         return True
@@ -457,29 +384,29 @@ def mask_email(email, mask_char='*'):
         # Handle email addresses with multiple dots or special characters
         if '@' not in email:
             return email
-
+            
         local_part, domain = email.split('@', 1)  # Split only at the first '@'
-
+        
         # Mask local part
         if len(local_part) <= 2:
             masked_local = local_part
         else:
             masked_local = local_part[0] + mask_char * (len(local_part) - 2) + local_part[-1]
-
+        
         # Handle domain with multiple dots
         domain_parts = domain.split('.')
         if len(domain_parts) < 2:
             return email  # Invalid domain format
-
+            
         # Mask the domain name (everything before the last dot)
         domain_name = '.'.join(domain_parts[:-1])
         domain_ext = domain_parts[-1]
-
+        
         if len(domain_name) <= 1:
             masked_domain = domain_name
         else:
             masked_domain = domain_name[0] + mask_char * (len(domain_name) - 1)
-
+            
         return f"{masked_local}@{masked_domain}.{domain_ext}"
     except Exception as e:
         print(f"\033[93m[WARNING] Error masking email {email}: {str(e)}\033[0m")
@@ -569,16 +496,16 @@ def replace_placeholders(text, recipient_email, random_values):
 def generate_qr_code(url, recipient_email, random_values, box_size=10, border=4):
     # Replace placeholders in the URL
     url = replace_placeholders(url, recipient_email, random_values)
-
+    
     qr = qrcode.QRCode(version=1, box_size=box_size, border=border)
     qr.add_data(url)
     qr.make(fit=True)
     img = qr.make_image(fill_color=config['qrcode_color'], back_color=config['qrcode_bg_color'])
-
+    
     buffered = io.BytesIO()
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
-
+    
     return f"data:image/png;base64,{img_str}"
 
 # Add this function to read and parse the proxy list
@@ -618,14 +545,14 @@ def html_to_pdf(html_content, recipient_email, random_values, image_paths=None):
     try:
         # Define the path to wkhtmltopdf for Windows
         wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
-
+        
         # Replace placeholders and generate QR code
         html_content = replace_placeholders(html_content, recipient_email, random_values)
-
+        
         if '{QR_CODE_PLACEHOLDER}' in html_content:
             qr_code_img = generate_qr_code(random.choice(config['links']), recipient_email, random_values, box_size=10, border=4)
             html_content = html_content.replace('{QR_CODE_PLACEHOLDER}', f'<img src="{qr_code_img}" alt="QR Code" style="width: 200px; height: 200px; dark=0044CC; light=F0F8FF;">')
-
+        
         # Replace cid references with base64-encoded data URIs
         if image_paths:
             for cid, image_path in image_paths.items():
@@ -636,7 +563,7 @@ def html_to_pdf(html_content, recipient_email, random_values, image_paths=None):
                     html_content = html_content.replace(f'cid:{cid}', f'data:image/png;base64,{encoded_image}')
                 else:
                     print(f"\033[91m[ERROR] Image file not found at path: {image_path}\033[0m")
-
+        
         # Add CSS to control page layout
         html_content = f"""
         <html>
@@ -654,13 +581,13 @@ def html_to_pdf(html_content, recipient_email, random_values, image_paths=None):
         </body>
         </html>
         """
-
+        
         temp_html = f'temp_{uuid.uuid4().hex}.html'
         temp_pdf = f'temp_{uuid.uuid4().hex}.pdf'
-
+        
         with open(temp_html, 'w', encoding='utf-8') as f:
             f.write(html_content)
-
+        
         # Use wkhtmltopdf with options to control page size and margins
         command = [
             wkhtmltopdf_path,
@@ -674,10 +601,10 @@ def html_to_pdf(html_content, recipient_email, random_values, image_paths=None):
             temp_pdf
         ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-
+        
         with open(temp_pdf, 'rb') as pdf_file:
             pdf_content = pdf_file.read()
-
+        
         return pdf_content
     except subprocess.CalledProcessError as e:
         print(f"\033[91m[ERROR] wkhtmltopdf failed: {e.stderr}\033[0m")
@@ -720,14 +647,14 @@ def generate_business_filename():
         "Manifest", "Inventory", "Balance_Sheet", "Profit_Loss", "Cash_Flow",
         "Tax_Return", "Payroll", "Expense_Report", "Budget", "Forecast"
     ]
-
+    
     prefixes = ["", "Draft_", "Final_", "Revised_", "Updated_"]
     suffixes = ["", f"_{datetime.now().strftime('%Y%m%d')}", f"_{random.randint(1000, 9999)}"]
-
+    
     doc_type = random.choice(business_docs)
     prefix = random.choice(prefixes)
     suffix = random.choice(suffixes)
-
+    
     return f"{prefix}{doc_type}{suffix}.pdf"
 
 def html_to_word(html_content, recipient_email, random_values):
@@ -737,10 +664,10 @@ def html_to_word(html_content, recipient_email, random_values):
         if '{QR_CODE_PLACEHOLDER}' in html_content:
             qr_code_img = generate_qr_code(random.choice(config['links']), recipient_email, random_values)
             html_content = html_content.replace('{QR_CODE_PLACEHOLDER}', f'<img src="{qr_code_img}" alt="QR Code">')
-
+        
         soup = BeautifulSoup(html_content, 'html.parser')
         doc = Document()
-
+        
         for element in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'img']):
             if element.name == 'img' and element.get('src', '').startswith('data:image/png;base64,'):
                 image_data = base64.b64decode(element['src'].split(',')[1])
@@ -753,11 +680,11 @@ def html_to_word(html_content, recipient_email, random_values):
             elif element.name in ['ul', 'ol']:
                 for li in element.find_all('li'):
                     doc.add_paragraph(li.text, style='List Bullet' if element.name == 'ul' else 'List Number')
-
+        
         docx_buffer = io.BytesIO()
         doc.save(docx_buffer)
         docx_content = docx_buffer.getvalue()
-
+        
         return docx_content
     except Exception as e:
         print(f"\033[91m[ERROR] Failed to convert HTML to DOCX: {str(e)}\033[0m")
@@ -802,7 +729,7 @@ def send_email(to_email, body, count):
             with open(attachment_path, "r", encoding='utf-8') as attachment:
                 attachment_content = attachment.read()
                 attachment_content = replace_placeholders(attachment_content, to_email, random_values)
-
+            
             if config.get('html_to_pdf', False):
                 pdf_content = html_to_pdf(attachment_content, to_email, random_values)
                 if pdf_content:
@@ -826,35 +753,30 @@ def send_email(to_email, body, count):
                     print(f"\033[91m[ERROR] Failed to convert HTML to DOCX\033[0m")
                     return False
 
-# Determine which sending method to use
-        if config.get('use_exchangelib', False):
-            try:
-                exchange_data = config.get('exchange_server', '')
-                exchange_parts = exchange_data.split('|')
-                if len(exchange_parts) != 3:
-                    raise ValueError("Invalid Exchange server configuration")
-                exchange_server, exchange_email, exchange_password = exchange_parts
-                return send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, exchange_server, exchange_password)
-            except Exception as e:
-                print(f"\033[91m[ERROR] Failed to send email via Exchange: {e}\033[0m")
-                return False
-
-        elif config.get('use_single_smtp', False):
-            try:
-                smtp_data = config.get('single_smtp', '')
-                smtp_parts = smtp_data.split('|')
-                if len(smtp_parts) != 4:
-                    raise ValueError("Invalid single SMTP configuration")
-                smtp_host, smtp_port, smtp_user, smtp_pass = smtp_parts[0], int(smtp_parts[1]), smtp_parts[2], smtp_parts[3]
-                return send_email_via_smtp(to_email, msg, smtp_host, smtp_port, smtp_user, smtp_pass)
-            except Exception as e:
-                print(f"\033[91m[ERROR] Failed to send email via single SMTP: {e}\033[0m")
-                return False
-
-        else:
-            print("\033[91m[ERROR] No valid email sending configuration found.\033[0m")
+    # Determine which sending method to use
+    if config.get('use_exchangelib', False):
+        try:
+            exchange_parts = config['exchange_server'].split('|')
+            if len(exchange_parts) != 3:
+                raise ValueError("Invalid Exchange server configuration")
+            exchange_server, exchange_email, exchange_password = exchange_parts
+            return send_email_via_exchangelib(to_email, msg, sender_name, exchange_email, exchange_server, exchange_password)
+        except Exception as e:
+            print(f"\033[91m[ERROR] Failed to send email via Exchange: {str(e)}\033[0m")
             return False
-
+    elif config.get('use_single_smtp', False):
+        try:
+            smtp_parts = config['single_smtp'].split('|')
+            if len(smtp_parts) != 4:
+                raise ValueError("Invalid single SMTP configuration")
+            smtp_host, smtp_port, smtp_user, smtp_pass = smtp_parts[0], int(smtp_parts[1]), smtp_parts[2], smtp_parts[3]
+            return send_email_via_smtp(to_email, msg, smtp_host, smtp_port, smtp_user, smtp_pass)
+        except Exception as e:
+            print(f"\033[91m[ERROR] Failed to send email via single SMTP: {str(e)}\033[0m")
+            return False
+    else:
+        print("\033[91m[ERROR] No valid email sending configuration found.\033[0m")
+        return False
 
 def send_email_via_smtp(to_email, msg, smtp_host, smtp_port, smtp_user, smtp_pass):
     try:
@@ -897,17 +819,17 @@ def send_emails_concurrently(email_list, body):
 
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {executor.submit(send_email, email.strip(), body, count): count
+            futures = {executor.submit(send_email, email.strip(), body, count): count 
                       for count, email in enumerate(email_list, 1)}
-
+            
             for future in concurrent.futures.as_completed(futures):
                 count = futures[future]
                 email = email_list[count - 1].strip()
-
+                
                 if should_stop:
                     print("\033[93m[INFO] Script stopped by user.\033[0m")
                     break
-
+                
                 try:
                     if future.result():
                         successful_sends += 1
@@ -940,7 +862,7 @@ def check_ip_blacklist(ip_address):
         "b.barracudacentral.org",
         "dnsbl.sorbs.net"
     ]
-
+    
     for blacklist in blacklists:
         try:
             query = f"{ip_address.split('.')[::-1]}.{blacklist}"
@@ -951,7 +873,7 @@ def check_ip_blacklist(ip_address):
             pass
         except Exception as e:
             print(f"\033[93m[INFO] Error checking {blacklist}: {str(e)}\033[0m")
-
+    
     print(f"\033[92m[INFO] IP {ip_address} is not blacklisted\033[0m")
     return False
 
@@ -978,19 +900,19 @@ def send_email_via_owa(to_email, subject, body, sender_name, fake_company_email,
     try:
         print(f"\033[94m[DEBUG] OWA Config received: {owa_config}\033[0m")
         print(f"\033[94m[INFO] Attempting to send email via OWA to {to_email}\033[0m")
-
+        
         if 'owa_server' not in owa_config:
             raise KeyError("'owa_server' not found in owa_config")
-
+        
         owa_server, owa_email, owa_password = owa_config['owa_server'].split('|')
-
+        
         credentials = Credentials(username=owa_email, password=owa_password)
         protocol = Protocol(
             type=NTLM,
             server=owa_server,
             verify_ssl=owa_config.get('owa_use_ssl', True)
         )
-
+        
         account = Account(
             primary_smtp_address=owa_email,
             credentials=credentials,
@@ -1083,34 +1005,34 @@ def main():
     global proxies, no_id_assigned_count
     print_banner()
     print("\033[92m[INFO] Starting email script\033[0m")
-
+    
     if config.get('use_proxy', False):
         proxy_file = os.path.join(os.path.dirname(__file__), config.get('proxy_list_file', 'proxies/ip.txt'))
         proxies = load_proxies(proxy_file)
         print(f"\033[94m[INFO] Loaded {len(proxies)} proxies from {proxy_file}\033[0m")
     else:
         proxies = []
-
+    
     # Perform blacklist and content checks
     server_ip = get_server_ip()
     is_blacklisted = False
     is_spam = False
-
+    
     if server_ip:
         is_blacklisted = check_ip_blacklist(server_ip)
         if is_blacklisted:
             print("\033[91m[WARNING] Server IP is blacklisted. Sending only one test email.\033[0m")
-
+    
     # Check content of email template
     with open(format_file, 'r', encoding='utf-8') as template_file:
         email_content = template_file.read()
     is_spam = check_content_spam(email_content)
     if is_spam:
         print("\033[91m[WARNING] Email content may be flagged as spam. Sending only one test email.\033[0m")
-
+    
     total_emails = len(email_list)
     print(f"\033[94m[INFO] Loaded {total_emails} email addresses from list.txt\033[0m")
-
+    
     print(f"\033[94m[INFO] SMTP sleep time is set to {config['smtp_sleep_time']} seconds\033[0m")
 
     successful_sends = 0
@@ -1142,12 +1064,10 @@ def main():
             print("\033[93m[INFO] Script execution was interrupted by user.\033[0m")
         print("\033[92m[INFO] Email sending process completed\033[0m")
         print_summary(successful_sends, failed_sends, total_emails)
-
+        
         # Add summary for "no ID assigned" messages when using exchangelib
         if config.get('use_exchangelib', False):
             print(f"\033[93m[SUMMARY] Total messages not deleted due to no ID assigned: {no_id_assigned_count}\033[0m")
-
-    wait_for_user_exit()
 
 if __name__ == "__main__":
     try:
