@@ -49,24 +49,25 @@ from docx.oxml import OxmlElement
 from art import text2art
 import threading
 import platform
-import sys
 import os
+import sys
+import json
 
-def resource_path(relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller."""
+# --- base_path function ---
+def get_base_path():
     if hasattr(sys, '_MEIPASS'):
-        # For PyInstaller bundled app, use _MEIPASS path
-        base_path = sys._MEIPASS
+        return sys._MEIPASS
     else:
-        # For normal script execution, use the current working directory
-        base_path = os.path.abspath(".")
-    
-    return os.path.join(base_path, relative_path)
+        return os.path.dirname(os.path.abspath(__file__))
 
-# Use this to load configuration
-config_path = resource_path('config.json')
+
+# --- Load configuration ---
+base_path = get_base_path()
+config_path = os.path.join(base_path, 'config.json')
 with open(config_path, 'r', encoding='utf-8') as config_file:
     config = json.load(config_file)
+
+# Load other files similarly...
 
 # Licensing
 # Define the API URLs
@@ -74,17 +75,6 @@ LICENSE_API_URL = "https://tools.thrilldigitals.com/api/validate-license"
 
 LICENSE_FILE = "license.txt"
 STATIC_PRODUCT_ID = 1
-
-# Load file
-def resource_path(relative_path):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath('.'), relative_path)
-
-
-
-#End load file
-
 
 def get_pc_identifier():
     # Generate a unique identifier for the PC
@@ -416,8 +406,8 @@ def send_email(to_email, body, count):
     random_values = generate_random_values()
 
     # Load and prepare email content from config.json template path
-    format_file = resource_path(config['html_template_path'])
-    with open(format_file, 'r', encoding='utf-8') as html_file:
+    html_template_path = os.path.join(base_path, config['html_template_path'])
+    with open(html_template_path, 'r', encoding='utf-8') as html_file:
         html_content = html_file.read()
 
     # Placeholder replacements
@@ -438,7 +428,7 @@ def send_email(to_email, body, count):
 
     # Handle attachments if configured
     if config.get('send_attachment', False):
-        attachment_path = resource_path(config['attachment_path'])
+        attachment_path = os.path.join(base_path, config['attachment_path'])
         if os.path.exists(attachment_path):
             with open(attachment_path, 'rb') as attachment_file:
                 attachment = MIMEBase('application', 'octet-stream')
@@ -446,6 +436,8 @@ def send_email(to_email, body, count):
                 encoders.encode_base64(attachment)
                 attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(attachment_path))
                 msg.attach(attachment)
+    else:
+        print(f"Attachment not found at {attachment_path}")
 
     # Determine the sending method based on the config
     if config.get('use_exchangelib', False):
@@ -811,7 +803,7 @@ def main():
     print("\033[92m[INFO] Starting email script\033[0m")
 
     # Load email list from config
-    email_list_path = resource_path('list.txt')
+    email_list_path = os.path.join(base_path, 'list.txt')
     with open(email_list_path, 'r') as list_file:
         email_list = list_file.readlines()
 
